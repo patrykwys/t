@@ -5,7 +5,9 @@
 class HostComponent {
   flagKey = 'test-flag';
 }
+
 describe('FeatureFlagDirective', () => {
+  let fixture: ComponentFixture<HostComponent>;
   const flagSignals = new Map<string, WritableSignal<boolean>>();
 
   function mockGetFlag(key: string, defaultValue = false): Signal<boolean> {
@@ -17,94 +19,85 @@ describe('FeatureFlagDirective', () => {
     return s.asReadonly();
   }
 
-  function createFixture<T>(component: new (...args: never[]) => T): ComponentFixture<T> {
-    TestBed.configureTestingModule({
-      imports: [component],
+  function textContent(): string {
+    return (fixture.nativeElement as HTMLElement).textContent!.trim();
+  }
+
+  beforeEach(async () => {
+    flagSignals.clear();
+
+    await TestBed.configureTestingModule({
+      imports: [HostComponent],
       providers: [
         { provide: FeatureFlagService, useValue: { getFlag: mockGetFlag } },
       ],
-    });
+    }).compileComponents();
 
-    const fixture = TestBed.createComponent(component);
+    fixture = TestBed.createComponent(HostComponent);
+  });
+
+  it('should hide content when flag is disabled', () => {
+    // act
     fixture.detectChanges();
-    return fixture;
-  }
 
-  function textContent<T>(fixture: ComponentFixture<T>): string {
-    return fixture.nativeElement.textContent.trim();
-  }
-
-  beforeEach(() => {
-    flagSignals.clear();
+    // assert
+    expect(textContent()).toBe('');
   });
 
-  describe('without else template', () => {
-    it('should hide content when flag is disabled', () => {
-      // arrange & act
-      const fixture = createFixture(HostComponent);
+  it('should show content when flag is enabled', () => {
+    // arrange
+    mockGetFlag('test-flag');
+    flagSignals.get('test-flag')!.set(true);
 
-      // assert
-      expect(textContent(fixture)).toBe('');
-    });
+    // act
+    fixture.detectChanges();
 
-    it('should show content when flag is enabled', () => {
-      // arrange
-      mockGetFlag('test-flag'); // pre-register
-      flagSignals.get('test-flag')!.set(true);
-
-      // act
-      const fixture = createFixture(HostComponent);
-
-      // assert
-      expect(textContent(fixture)).toBe('Visible Content');
-    });
-
-    it('should show content when flag changes from disabled to enabled', () => {
-      // arrange
-      const fixture = createFixture(HostComponent);
-      expect(textContent(fixture)).toBe('');
-
-      // act
-      flagSignals.get('test-flag')!.set(true);
-      fixture.detectChanges();
-
-      // assert
-      expect(textContent(fixture)).toBe('Visible Content');
-    });
-
-    it('should hide content when flag changes from enabled to disabled', () => {
-      // arrange
-      mockGetFlag('test-flag');
-      flagSignals.get('test-flag')!.set(true);
-      const fixture = createFixture(HostComponent);
-      expect(textContent(fixture)).toBe('Visible Content');
-
-      // act
-      flagSignals.get('test-flag')!.set(false);
-      fixture.detectChanges();
-
-      // assert
-      expect(textContent(fixture)).toBe('');
-    });
+    // assert
+    expect(textContent()).toBe('Visible Content');
   });
 
-  describe('dynamic flag key', () => {
-    it('should re-evaluate when the flag key changes', () => {
-      // arrange
-      mockGetFlag('flag-a');
-      mockGetFlag('flag-b');
-      flagSignals.get('flag-a')!.set(false);
-      flagSignals.get('flag-b')!.set(true);
+  it('should show content when flag changes from disabled to enabled', () => {
+    // arrange
+    fixture.detectChanges();
+    expect(textContent()).toBe('');
 
-      const fixture = createFixture(HostComponent);
-      expect(textContent(fixture)).toBe('');
+    // act
+    flagSignals.get('test-flag')!.set(true);
+    fixture.detectChanges();
 
-      // act — switch to a flag that is enabled
-      fixture.componentInstance.flagKey = 'flag-b';
-      fixture.detectChanges();
+    // assert
+    expect(textContent()).toBe('Visible Content');
+  });
 
-      // assert
-      expect(textContent(fixture)).toBe('Visible Content');
-    });
+  it('should hide content when flag changes from enabled to disabled', () => {
+    // arrange
+    mockGetFlag('test-flag');
+    flagSignals.get('test-flag')!.set(true);
+    fixture.detectChanges();
+    expect(textContent()).toBe('Visible Content');
+
+    // act
+    flagSignals.get('test-flag')!.set(false);
+    fixture.detectChanges();
+
+    // assert
+    expect(textContent()).toBe('');
+  });
+
+  it('should re-evaluate when the flag key changes', () => {
+    // arrange
+    mockGetFlag('flag-a');
+    mockGetFlag('flag-b');
+    flagSignals.get('flag-a')!.set(false);
+    flagSignals.get('flag-b')!.set(true);
+    fixture.detectChanges();
+    expect(textContent()).toBe('');
+
+    // act
+    fixture.componentInstance.flagKey = 'flag-b';
+    fixture.detectChanges();
+
+    // assert
+    expect(textContent()).toBe('Visible Content');
   });
 });
