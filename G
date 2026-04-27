@@ -1,119 +1,80 @@
-<div class="data-sensitivity">
-  <span class="data-sensitivity__label">Data Sensitivity</span>
-
-  @if (!editing()) {
-    <button
-      class="pill"
-      [attr.data-level]="pillLevel()"
-      (click)="enterEdit()"
-      type="button"
-    >
-      <mat-icon class="pill__icon">lock</mat-icon>
-      <span class="pill__text">{{ pillLabel() }}</span>
-    </button>
-
-    <button mat-icon-button class="data-sensitivity__action-btn" (click)="enterEdit()" type="button">
-      <mat-icon>edit</mat-icon>
-    </button>
-  }
-
-  @if (editing()) {
-    <mat-select
-      [value]="selectedClassification()"
-      (selectionChange)="selectedClassification.set($event.value)"
-      class="data-sensitivity__select"
-    >
-      @for (option of sp2iOptions; track option.value) {
-        <mat-option [value]="option.value">{{ option.label }}</mat-option>
-      }
-    </mat-select>
-
-    <button
-      mat-flat-button
-      color="primary"
-      [disabled]="isSameAsOriginal() || saving()"
-      (click)="onSave()"
-      type="button"
-    >
-      {{ saving() ? 'Saving...' : 'Save' }}
-    </button>
-
-    <button mat-button (click)="cancelEdit()" [disabled]="saving()" type="button">
-      Cancel
-    </button>
-  }
-
-  <button
-    mat-icon-button
-    cdkOverlayOrigin
-    #infoTrigger="cdkOverlayOrigin"
-    class="data-sensitivity__action-btn"
-    (click)="toggleInfo()"
-    type="button"
-  >
-    <mat-icon>info_outline</mat-icon>
-  </button>
-
-  <ng-template
-    cdkConnectedOverlay
-    [cdkConnectedOverlayOrigin]="infoTrigger"
-    [cdkConnectedOverlayOpen]="infoOpen()"
-    [cdkConnectedOverlayHasBackdrop]="true"
-    cdkConnectedOverlayBackdropClass="cdk-overlay-transparent-backdrop"
-    (backdropClick)="closeInfo()"
-  >
-    <div class="info-popover">
-      <div class="info-popover__header">
-        <h3 class="info-popover__title">Data Classification Guidance</h3>
-        <button mat-icon-button (click)="closeInfo()" type="button">
-          <mat-icon>close</mat-icon>
-        </button>
-      </div>
-
-      <div class="info-popover__levels">
-        @for (item of classificationGuide; track item.level) {
-          <div class="info-popover__level" [attr.data-level]="item.level">
-            <span class="info-popover__dot"></span>
-            <div>
-              <strong>{{ item.title }}</strong>
-              <p>{{ item.description }}</p>
-            </div>
-          </div>
-        }
-      </div>
-
-      <p class="info-popover__footer">
-        For full details, refer to the
-        <a href="#" class="info-popover__link">Information Protection Program web site</a>.
-        For a quick reference, refer to the
-        <a href="#" class="info-popover__link">Information Policy Quick Reference hard card</a>.
-      </p>
-
-      <p class="info-popover__note">
-        <em>If you are unsure which data classification to select, please consult with your ISO.</em>
-      </p>
-    </div>
-  </ng-template>
-</div>
-.info-popover {
-  background-color: var(--mat-sys-surface-container);
-  border-radius: 12px;
-  padding: 24px;
-  max-width: 420px;
-  box-shadow: var(--mat-sys-level2);
-}
-
-.info-popover__header {
+.data-sensitivity {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
+  gap: 8px;
+}
+
+.data-sensitivity__label {
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.data-sensitivity__action-btn {
+  color: #6b7280;
+}
+
+.data-sensitivity__select {
+  width: 200px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  transition: opacity 0.15s ease;
+}
+
+.pill:hover {
+  opacity: 0.85;
+}
+
+.pill__icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.pill[data-level='public'] {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.pill[data-level='internal'] {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.pill[data-level='confidential'] {
+  background-color: #fef9c3;
+  color: #854d0e;
+}
+
+.pill[data-level='highly-confidential'] {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.pill[data-level='none'] {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+
+.info-popover {
+  padding: 24px;
+  max-width: 420px;
 }
 
 .info-popover__title {
   font-size: 16px;
   font-weight: 600;
-  margin: 0;
+  margin: 0 0 16px;
 }
 
 .info-popover__levels {
@@ -133,7 +94,7 @@
   margin: 4px 0 0;
   font-size: 13px;
   line-height: 1.5;
-  color: var(--mat-sys-on-surface-variant);
+  color: #6b7280;
 }
 
 .info-popover__dot {
@@ -164,16 +125,292 @@
   font-size: 13px;
   line-height: 1.5;
   margin: 16px 0 8px;
-  color: var(--mat-sys-on-surface-variant);
+  color: #6b7280;
 }
 
 .info-popover__link {
-  color: var(--mat-sys-primary);
+  color: #2563eb;
   text-decoration: underline;
 }
 
 .info-popover__note {
   font-size: 13px;
-  color: var(--mat-sys-on-surface-variant);
+  color: #6b7280;
   margin: 0;
 }
+
+
+
+@Component({
+  selector: 'app-data-sensitivity',
+  standalone: true,
+  imports: [
+    MatIconModule,
+    MatButtonModule,
+    MatMenuModule,
+    MatSelectModule,
+  ],
+  templateUrl: './data-sensitivity.component.html',
+  styleUrl: './data-sensitivity.component.scss',
+})
+export class DataSensitivityComponent {
+
+
+  onSave(): void {
+    if (this.isSameAsOriginal()) {
+      this.cancelEdit();
+      return;
+    }
+
+
+  }
+}
+
+
+  <button mat-icon-button class="data-sensitivity__action-btn" [matMenuTriggerFor]="infoMenu" type="button">
+    <mat-icon>info_outline</mat-icon>
+  </button>
+
+  <mat-menu #infoMenu="matMenu" class="info-popover-panel">
+    <div class="info-popover" (click)="$event.stopPropagation()">
+      <h3 class="info-popover__title">Data Classification Guidance</h3>
+
+      <div class="info-popover__levels">
+        @for (item of classificationGuide; track item.level) {
+          <div class="info-popover__level" [attr.data-level]="item.level">
+            <span class="info-popover__dot"></span>
+            <div>
+              <strong>{{ item.guideTitle }}</strong>
+              <p>{{ item.description }}</p>
+            </div>
+          </div>
+        }
+      </div>
+
+      <p class="info-popover__footer">
+        For full details, refer to the
+        <a href="#" class="info-popover__link">xxxxxxxxxxxxxxxxx.</a>.
+        For a quick reference, refer to the
+        <a href="#" class="info-popover__link">xxxxxxxxxxxxxxxxx.</a>.
+      </p>
+
+      <p class="info-popover__note">
+        <em>xxxxxxxxxxxxxxxxx.</em>
+      </p>
+    </div>
+  </mat-menu>
+
+
+
+class MockDialogRef {
+  constructor(private readonly result: string) {}
+  afterClosed = () => of(this.result);
+}
+
+class MockMatDialog {
+  nextResult = 'no';
+
+  open(): MockDialogRef {
+    return new MockDialogRef(this.nextResult);
+  }
+}
+
+describe('DataSensitivityComponent', () => {
+  let fixture: ComponentFixture<DataSensitivityComponent>;
+  let component: DataSensitivityComponent;
+  let mockDialog: MockMatDialog;
+
+  beforeEach(() => {
+    mockDialog = new MockMatDialog();
+
+    TestBed.configureTestingModule({
+      imports: [
+        DataSensitivityComponent,
+        MatIconModule,
+        MatButtonModule,
+        MatDialogModule,
+        NoopAnimationsModule,
+      ],
+      providers: [
+        { provide: MatDialog, useValue: mockDialog },
+      ],
+    });
+
+    fixture = TestBed.createComponent(DataSensitivityComponent);
+    component = fixture.componentInstance;
+    fixture.componentRef.setInput('value', 'Public');
+    fixture.detectChanges();
+  });
+
+  describe('enterEdit', () => {
+    it('should set editing to true and sync selectedClassification to current value', () => {
+      // Act
+      component.enterEdit();
+
+      // Assert
+      expect(component.editing()).toBe(true);
+      expect(component.selectedClassification()).toBe('Public');
+    });
+  });
+
+  describe('cancelEdit', () => {
+    it('should set editing to false', () => {
+      // Arrange
+      component.enterEdit();
+
+      // Act
+      component.cancelEdit();
+
+      // Assert
+      expect(component.editing()).toBe(false);
+    });
+  });
+
+  describe('pillLabel', () => {
+    it.each([
+      ['Public', 'Public'],
+      ['Internal', 'Internal'],
+      ['Confidential', 'Confidential'],
+      ['Highly Confidential', 'Highly Confidential'],
+      ['Non-Business', 'Non-Business'],
+      ['Not-Set', 'Not Specified'],
+    ] as [Sp2iDataCertification, string][])('should return "%s" label as "%s"', (input, expected) => {
+      // Arrange
+      fixture.componentRef.setInput('value', input);
+      fixture.detectChanges();
+
+      // Act & Assert
+      expect(component.pillLabel()).toBe(expected);
+    });
+  });
+
+  describe('pillLevel', () => {
+    it.each([
+      ['Public', 'public'],
+      ['Internal', 'internal'],
+      ['Confidential', 'confidential'],
+      ['Highly Confidential', 'highly-confidential'],
+      ['Non-Business', 'none'],
+      ['Not-Set', 'none'],
+    ] as [Sp2iDataCertification, string][])('should return "%s" level as "%s"', (input, expected) => {
+      // Arrange
+      fixture.componentRef.setInput('value', input);
+      fixture.detectChanges();
+
+      // Act & Assert
+      expect(component.pillLevel()).toBe(expected);
+    });
+  });
+
+  describe('isSameAsOriginal', () => {
+    it('should return true when selectedClassification matches value', () => {
+      // Arrange
+      component.selectedClassification.set('Public');
+
+      // Act & Assert
+      expect(component.isSameAsOriginal()).toBe(true);
+    });
+
+    it('should return false when selectedClassification differs from value', () => {
+      // Arrange
+      component.selectedClassification.set('Confidential');
+
+      // Act & Assert
+      expect(component.isSameAsOriginal()).toBe(false);
+    });
+  });
+
+  describe('onSave', () => {
+    it('should cancel editing without opening dialog when value is unchanged', () => {
+      // Arrange
+      component.enterEdit();
+
+      // Act
+      component.onSave();
+
+      // Assert
+      expect(component.editing()).toBe(false);
+    });
+
+    it('should emit confirmed and close editing when dialog confirms', () => {
+      // Arrange
+      let emittedValue: Sp2iDataCertification | null = null;
+      component.confirmed.subscribe((value) => emittedValue = value);
+      component.enterEdit();
+      component.selectedClassification.set('Confidential');
+      mockDialog.nextResult = 'yes';
+
+      // Act
+      component.onSave();
+
+      // Assert
+      expect(emittedValue).toBe('Confidential');
+      expect(component.editing()).toBe(false);
+    });
+
+    it('should not emit and keep editing open when dialog rejects', () => {
+      // Arrange
+      let emittedValue: Sp2iDataCertification | null = null;
+      component.confirmed.subscribe((value) => emittedValue = value);
+      component.enterEdit();
+      component.selectedClassification.set('Confidential');
+      mockDialog.nextResult = 'no';
+
+      // Act
+      component.onSave();
+
+      // Assert
+      expect(emittedValue).toBeNull();
+      expect(component.editing()).toBe(true);
+    });
+  });
+});
+
+
+describe('ParentComponent', () => {
+  let fixture: ComponentFixture<ParentComponent>;
+  let component: ParentComponent;
+  let mockStore: jest.Mocked<DatasourceStore>;
+
+  beforeEach(() => {
+    mockStore = {
+      datasources: createMockSignalWithValue([]),
+      updateDatasource: jest.fn(),
+    } as jest.Mocked<DatasourceStore>;
+
+    TestBed.configureTestingModule({
+      imports: [ParentComponent],
+      providers: [
+        { provide: DatasourceStore, useValue: mockStore },
+      ],
+    });
+
+    fixture = TestBed.createComponent(ParentComponent);
+    component = fixture.componentInstance;
+  });
+
+  describe('onCertificationChanged', () => {
+    it('should call store.updateDatasource with correct id and value', () => {
+      // Arrange
+      fixture.componentRef.setInput('datasource', MOCK_DATASOURCE);
+      fixture.detectChanges();
+
+      // Act
+      component.onCertificationChanged('Confidential');
+
+      // Assert
+      expect(mockStore.updateDatasource).toHaveBeenCalledWith({
+        id: 'ds-1',
+        request: 'Confidential',
+      });
+    });
+
+    it('should not call store when datasource is undefined', () => {
+      // Act
+      component.onCertificationChanged('Internal');
+
+      // Assert
+      expect(mockStore.updateDatasource).not.toHaveBeenCalled();
+    });
+  });
+});
