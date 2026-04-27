@@ -1,0 +1,97 @@
+<div class="data-sensitivity">
+  <span class="data-sensitivity__label">Data Sensitivity</span>
+
+  @if (!editing()) {
+    <button
+      class="pill"
+      [attr.data-level]="pillLevel()"
+      (click)="enterEdit()"
+      type="button"
+    >
+      <mat-icon class="pill__icon">lock</mat-icon>
+      <span class="pill__text">{{ pillLabel() }}</span>
+    </button>
+
+    <button mat-icon-button class="data-sensitivity__action-btn" (click)="enterEdit()" type="button">
+      <mat-icon>edit</mat-icon>
+    </button>
+  }
+
+  @if (editing()) {
+    <mat-select
+      [value]="selectedClassification()"
+      (selectionChange)="selectedClassification.set($event.value)"
+      class="data-sensitivity__select"
+    >
+      @for (option of sp2iOptions; track option.value) {
+        <mat-option [value]="option.value">{{ option.label }}</mat-option>
+      }
+    </mat-select>
+
+    <button
+      mat-flat-button
+      color="primary"
+      [disabled]="isSameAsOriginal() || saving()"
+      (click)="onSave()"
+      type="button"
+    >
+      {{ saving() ? 'Saving...' : 'Save' }}
+    </button>
+
+    <button mat-button (click)="cancelEdit()" [disabled]="saving()" type="button">
+      Cancel
+    </button>
+  }
+
+  <button
+    mat-icon-button
+    cdkOverlayOrigin
+    #infoTrigger="cdkOverlayOrigin"
+    class="data-sensitivity__action-btn"
+    (click)="toggleInfo()"
+    type="button"
+  >
+    <mat-icon>info_outline</mat-icon>
+  </button>
+
+  <ng-template
+    cdkConnectedOverlay
+    [cdkConnectedOverlayOrigin]="infoTrigger"
+    [cdkConnectedOverlayOpen]="infoOpen()"
+    [cdkConnectedOverlayHasBackdrop]="true"
+    cdkConnectedOverlayBackdropClass="cdk-overlay-transparent-backdrop"
+    (backdropClick)="closeInfo()"
+  >
+    <div class="info-popover">
+      <div class="info-popover__header">
+        <h3 class="info-popover__title">Data Classification Guidance</h3>
+        <button mat-icon-button (click)="closeInfo()" type="button">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <div class="info-popover__levels">
+        @for (item of classificationGuide; track item.level) {
+          <div class="info-popover__level" [attr.data-level]="item.level">
+            <span class="info-popover__dot"></span>
+            <div>
+              <strong>{{ item.title }}</strong>
+              <p>{{ item.description }}</p>
+            </div>
+          </div>
+        }
+      </div>
+
+      <p class="info-popover__footer">
+        For full details, refer to the
+        <a href="#" class="info-popover__link">Information Protection Program web site</a>.
+        For a quick reference, refer to the
+        <a href="#" class="info-popover__link">Information Policy Quick Reference hard card</a>.
+      </p>
+
+      <p class="info-popover__note">
+        <em>If you are unsure which data classification to select, please consult with your ISO.</em>
+      </p>
+    </div>
+  </ng-template>
+</div>
