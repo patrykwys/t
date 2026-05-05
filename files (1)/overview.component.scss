@@ -1,0 +1,49 @@
+.tab-content {
+    padding: 20px;
+}
+
+.description {
+    word-wrap: break-word;
+}
+
+.title-text {
+    margin: 0 0 0 12px;
+    color: #155724;
+}
+
+.value-text {
+    color: #44474e;
+    font-size: 16px;
+}
+
+.stat-row {
+    margin-bottom: 8px;
+}
+
+.grid {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #e0e0e0;
+    margin-bottom: 12px;
+}
+
+.grid-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 18px;
+    gap: 12px;
+    align-items: center;
+}
+
+.grid-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.grid-info-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: #8c8c9b;
+}
