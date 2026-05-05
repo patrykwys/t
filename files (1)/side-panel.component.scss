@@ -1,0 +1,34 @@
+.panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 800px;
+  max-width: 90vw;
+  background: #fafafa;
+  box-shadow: -8px 0 40px rgba(0, 0, 0, 0.08);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  animation: panel-slide-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.15);
+  z-index: 999;
+  animation: backdrop-fade-in 0.2s ease both;
+}
+
+@keyframes backdrop-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes panel-slide-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}

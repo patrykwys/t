@@ -1,0 +1,118 @@
+.panel-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 24px 24px 14px;
+  flex-shrink: 0;
+}
+
+.panel-image-wrapper {
+  position: relative;
+  width: 180px;
+  height: 120px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.panel-title-area {
+  flex: 1;
+  min-width: 0;
+  padding-top: 2px;
+  overflow: hidden;
+}
+
+.panel-title {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.panel-owner-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.panel-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #135e01, #23bb05);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.panel-owner-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #3a4a52;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.panel-close {
+  --mdc-icon-button-state-layer-size: 32px;
+  --mdc-icon-button-icon-size: 20px;
+  color: #8c8c9b;
+  flex-shrink: 0;
+}
+
+.panel-source-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  background: #eef7f3;
+  border: 1px solid rgba(42, 157, 110, 0.25);
+  font-size: 12px;
+  color: #155724;
+  margin-bottom: 8px;
+  pointer-events: none;
+}
+
+.datasource-pill {
+  line-height: 1;
+}
+
+.datasource-pill-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #155724;
+}
+
+.source-icon {
+  position: absolute;
+  bottom: 25px;
+  left: 5px;
+  display: flex;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 2px solid #ffffff;
+  background-color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+}

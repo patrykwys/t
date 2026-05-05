@@ -1,0 +1,31 @@
+<app-side-panel (closed)="closed.emit()">
+
+  <app-panel-header [data]="headerData()" (closed)="closed.emit()">
+    <img panelImage class="panel-image"
+      [ngSrc]="certifiedImageSrc()"
+      [alt]="datasource().name + ' image'"
+      width="180" height="120" priority>
+
+    <app-datasource-badge panelBadge class="panel-image-banner"
+      [variant]="datasource().isCertified ? 'certified' : 'uncertified'"
+      mode="overlay">
+    </app-datasource-badge>
+  </app-panel-header>
+
+  <mat-tab-group class="tabs" animationDuration="200ms">
+    <mat-tab>
+      <ng-template mat-tab-label>Overview</ng-template>
+      <ng-template matTabContent>
+        <app-overview [data]="overviewData()"></app-overview>
+      </ng-template>
+    </mat-tab>
+
+    <mat-tab>
+      <ng-template mat-tab-label>Connected Reports</ng-template>
+      <ng-template matTabContent>
+        <app-connected-reports [datasource]="datasource()"></app-connected-reports>
+      </ng-template>
+    </mat-tab>
+  </mat-tab-group>
+
+</app-side-panel>

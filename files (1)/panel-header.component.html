@@ -1,0 +1,33 @@
+<header class="panel-header">
+  <div class="panel-image-wrapper">
+    <ng-content select="[panelImage]"></ng-content>
+
+    <img class="source-icon"
+      [ngSrc]="data().sourceIconSrc"
+      [alt]="data().sourceLabel + ' icon'"
+      width="30" height="30" priority>
+
+    <ng-content select="[panelBadge]"></ng-content>
+  </div>
+
+  <div class="panel-title-area">
+    <h2 class="panel-title">{{ data().name }}</h2>
+
+    <div class="panel-source-pill">
+      <mat-chip-row class="datasource-pill">
+        <span class="datasource-pill-content">
+          <span>{{ data().sourceLabel }}</span>
+        </span>
+      </mat-chip-row>
+    </div>
+
+    <div class="panel-owner-row">
+      <span class="panel-avatar">{{ data().ownerInitials }}</span>
+      <span class="panel-owner-name">{{ data().ownerName }}</span>
+    </div>
+  </div>
+
+  <button mat-icon-button class="panel-close" (click)="closed.emit()">
+    <mat-icon>close</mat-icon>
+  </button>
+</header>
