@@ -2,7 +2,9 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, output } f
 import { MatTabGroup, MatTab, MatTabContent, MatTabLabel } from '@angular/material/tabs';
 
 import { Report } from '../models/report.model'; // adjust path
+import { SP2IDataClassification } from '../models/sp2i-data-classification.model'; // adjust path
 import { CatalogStore } from '../store/catalog.store'; // adjust path
+import { getOwnerInitials } from '../utils/get-owner-initials';
 import { SidePanelComponent } from '../side-panel/side-panel.component';
 import { PanelHeaderComponent } from '../panel-header/panel-header.component';
 import { PanelHeaderData } from '../panel-header/panel-header-data.model';
@@ -27,7 +29,7 @@ import { OverviewData } from '../overview/overview-data.model';
   ],
 })
 export class ReportPanelComponent {
-  private readonly store = inject(CatalogStore);
+  protected readonly store = inject(CatalogStore);
 
   report = input.required<Report>();
 
@@ -48,7 +50,7 @@ export class ReportPanelComponent {
 
     return {
       name: r.name,
-      ownerInitials: this.store.getOwnerInitials(r.owner?.name),
+      ownerInitials: getOwnerInitials(r.owner?.name),
       ownerName: r.owner?.name ?? '',
       sourceIconSrc: icon,
       sourceLabel: label,
@@ -72,6 +74,15 @@ export class ReportPanelComponent {
         { label: 'Connected Datasources', value: r.datasourceCount?.toLocaleString() ?? '—' },
         { label: 'Last Accessed', value: r.lastAccessedDate ?? '—' },
       ],
+      tags: r.tags ?? [],
+      entityLabel: 'Report',
     };
   });
+
+  onCertificationChanged(classification: SP2IDataClassification): void {
+    this.store.updateReport({
+      id: this.report().id,
+      request: classification,
+    });
+  }
 }

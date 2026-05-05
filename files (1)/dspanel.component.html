@@ -16,7 +16,11 @@
     <mat-tab>
       <ng-template mat-tab-label>Overview</ng-template>
       <ng-template matTabContent>
-        <app-overview [data]="overviewData()"></app-overview>
+        <app-overview
+          [data]="overviewData()"
+          [saving]="store.isLoading()"
+          (sensitivityChanged)="onCertificationChanged($event)">
+        </app-overview>
       </ng-template>
     </mat-tab>
 

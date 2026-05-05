@@ -4,7 +4,11 @@
 
   <div class="stat-row">
     <h4 class="title-text">Data Sensitivity</h4>
-    <app-sensitivity-edit-component [value]="data().sensitivity"></app-sensitivity-edit-component>
+    <app-sensitivity-edit-component
+      [value]="data().sensitivity"
+      [saving]="saving()"
+      (confirmed)="sensitivityChanged.emit($event)">
+    </app-sensitivity-edit-component>
   </div>
 
   <div class="stat-row">
@@ -31,6 +35,6 @@
     }
   </div>
 
-  <h4 class="title-text">Tags</h4>
-  <app-tags></app-tags>
+  <h4 class="title-text">{{ data().entityLabel }} Tags</h4>
+  <app-tags [collection]="data().tags"></app-tags>
 </div>

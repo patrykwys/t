@@ -3,7 +3,9 @@ import { NgOptimizedImage } from '@angular/common';
 import { MatTabGroup, MatTab, MatTabContent, MatTabLabel } from '@angular/material/tabs';
 
 import { Datasource } from '../models/datasource.model'; // adjust path
+import { SP2IDataClassification } from '../models/sp2i-data-classification.model'; // adjust path
 import { CatalogStore } from '../store/catalog.store'; // adjust path
+import { getOwnerInitials } from '../utils/get-owner-initials';
 import { SidePanelComponent } from '../side-panel/side-panel.component';
 import { PanelHeaderComponent } from '../panel-header/panel-header.component';
 import { PanelHeaderData } from '../panel-header/panel-header-data.model';
@@ -31,7 +33,7 @@ import { ConnectedReportsComponent } from '../connected-reports/connected-report
   ],
 })
 export class DspanelComponent {
-  private readonly store = inject(CatalogStore);
+  protected readonly store = inject(CatalogStore);
 
   datasource = input.required<Datasource>();
 
@@ -56,7 +58,7 @@ export class DspanelComponent {
 
     return {
       name: ds.name,
-      ownerInitials: this.store.getOwnerInitials(ds.owner?.name),
+      ownerInitials: getOwnerInitials(ds.owner?.name),
       ownerName: ds.owner?.name ?? '',
       sourceIconSrc: icon,
       sourceLabel: label,
@@ -78,6 +80,15 @@ export class DspanelComponent {
         { label: 'Refresh Rate', value: ds.refreshRate ?? '—' },
         { label: 'Size', value: ds.size ?? '—' },
       ],
+      tags: ds.tags ?? [],
+      entityLabel: 'Datasource',
     };
   });
+
+  onCertificationChanged(classification: SP2IDataClassification): void {
+    this.store.updateDatasource({
+      id: this.datasource().id,
+      request: classification,
+    });
+  }
 }

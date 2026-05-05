@@ -10,4 +10,6 @@ export interface OverviewData {
   created: string;
   updated: string;
   metrics: OverviewMetric[];
+  tags: string[];
+  entityLabel: string;
 }
