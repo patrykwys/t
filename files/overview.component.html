@@ -1,0 +1,36 @@
+<div class="tab-content">
+  <h4 class="title-text">Description</h4>
+  <p class="description value-text">{{ data().description }}</p>
+
+  <div class="stat-row">
+    <h4 class="title-text">Data Sensitivity</h4>
+    <app-sensitivity-edit-component [value]="data().sensitivity"></app-sensitivity-edit-component>
+  </div>
+
+  <div class="stat-row">
+    <h4 class="title-text">Source</h4>
+    <span class="value-text">{{ data().source }}</span>
+  </div>
+
+  <div class="stat-row">
+    <h4 class="title-text">Created</h4>
+    <span class="value-text">{{ data().created }}</span>
+    <h4 class="title-text">Last Updated</h4>
+    <span class="value-text">{{ data().updated }}</span>
+  </div>
+
+  <h4 class="title-text">Key Metrics</h4>
+  <div class="grid">
+    @for (metric of data().metrics; track metric.label) {
+      <div class="grid-row">
+        <span class="grid-label">{{ metric.label }}
+          <mat-icon class="grid-info-icon">info</mat-icon>
+        </span>
+        <span class="grid-value">{{ metric.value }}</span>
+      </div>
+    }
+  </div>
+
+  <h4 class="title-text">Tags</h4>
+  <app-tags></app-tags>
+</div>

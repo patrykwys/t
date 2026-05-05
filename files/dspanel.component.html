@@ -1,0 +1,21 @@
+<app-side-panel
+  [data]="panelData()"
+  (closed)="closed.emit()">
+
+  <mat-tab-group class="tabs" animationDuration="200ms">
+    <mat-tab>
+      <ng-template mat-tab-label>Overview</ng-template>
+      <ng-template matTabContent>
+        <app-overview [data]="overviewData()"></app-overview>
+      </ng-template>
+    </mat-tab>
+
+    <mat-tab>
+      <ng-template mat-tab-label>Connected Reports</ng-template>
+      <ng-template matTabContent>
+        <app-connected-reports [datasource]="datasource()"></app-connected-reports>
+      </ng-template>
+    </mat-tab>
+  </mat-tab-group>
+
+</app-side-panel>
