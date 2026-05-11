@@ -1,0 +1,293 @@
+ASDASDASDASDASDASD87326IUGASDJHADGSUYQGWEUYT2WUT21UJHAGSDJHAGSDJAVNBZVADSHGADSGHJADSJADSJJHADSJADSJADSJHADSJADSJADS
+
+import { TestBed, fakeAsync, tick, discardPeriodicTasks } from '@angular/core/testing';
+import { Router } from '@angular/router';
+ 
+import { ReportImageStore, ReportImageStoreType } from './report-image.store';
+import { ImageApiService } from './image-api.service';
+import { StorageService } from './storage.service';
+import { asyncData, asyncError } from '../../testing/test-utils';
+ 
+const TIME_TO_LIVE_MS = 1000 * 60 * 60 * 5;
+const CLEANUP_INTERVAL_MS = 1000 * 30;
+ 
+describe('ReportImageStore', () => {
+    let store: ReportImageStoreType;
+    let imageService: jest.Mocked<ImageApiService>;
+    let storageService: jest.Mocked<StorageService>;
+ 
+    let fileReaderMock: {
+        onload: (() => void) | null;
+        result: string;
+        readAsDataURL: jest.Mock;
+    };
+ 
+    beforeEach(() => {
+        jest.spyOn(URL, 'createObjectURL').mockReturnValue('blob:http://localhost/mock-uuid');
+        jest.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+        Object.defineProperty(URL, 'canParse', {
+            value: jest.fn().mockReturnValue(false),
+            writable: true,
+            configurable: true,
+        });
+ 
+        fileReaderMock = {
+            onload: null,
+            result: '',
+            readAsDataURL: jest.fn().mockImplementation(() => {
+                fileReaderMock.result = 'data:image/png;base64,abc123';
+                fileReaderMock.onload?.();
+            }),
+        };
+        global.FileReader = jest.fn(() => fileReaderMock) as unknown as typeof FileReader;
+ 
+        imageService = {} as jest.Mocked<ImageApiService>;
+        imageService.getReportImage = jest.fn();
+ 
+        storageService = {} as jest.Mocked<StorageService>;
+        storageService.getItem = jest.fn().mockReturnValue(null);
+        storageService.setItem = jest.fn();
+        storageService.getandremoveitem = jest.fn();
+ 
+        TestBed.configureTestingModule({
+            providers: [
+                { provide: ImageApiService, useValue: imageService },
+                { provide: StorageService, useValue: storageService },
+                { provide: Router, useValue: { url: '/reports' } },
+            ],
+        });
+ 
+        store = TestBed.inject(ReportImageStore);
+    });
+ 
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+ 
+    describe('getUrl', () => {
+        it('should return undefined when no cache and no storage exist', fakeAsync(() => {
+            // arrange
+            storageService.getItem.mockReturnValue(null);
+ 
+            // act
+            const result = store.getUrl(1);
+ 
+            // assert
+            expect(result).toBeUndefined();
+            discardPeriodicTasks();
+        }));
+ 
+        it('should return url from storage when it is a valid data URL', fakeAsync(() => {
+            // arrange
+            const dataUrl = 'data:image/png;base64,abc123';
+            storageService.getItem.mockReturnValue(dataUrl);
+            jest.mocked(URL.canParse).mockReturnValue(true);
+ 
+            // act
+            const result = store.getUrl(1);
+ 
+            // assert
+            expect(result).toBe(dataUrl);
+            expect(store.entityMap()[1]?.url).toBe(dataUrl);
+            discardPeriodicTasks();
+        }));
+ 
+        it('should return undefined when storage contains bare base64', fakeAsync(() => {
+            // arrange
+            storageService.getItem.mockReturnValue('iVBORw0KGgoAAAA');
+            jest.mocked(URL.canParse).mockReturnValue(false);
+ 
+            // act
+            const result = store.getUrl(1);
+ 
+            // assert
+            expect(result).toBeUndefined();
+            expect(store.entityMap()[1]).toBeUndefined();
+            discardPeriodicTasks();
+        }));
+ 
+        it('should serve from entity cache without hitting storage on subsequent calls', fakeAsync(() => {
+            // arrange — first call promotes from storage to entity
+            storageService.getItem.mockReturnValue('data:image/png;base64,abc123');
+            jest.mocked(URL.canParse).mockReturnValue(true);
+            store.getUrl(1);
+            storageService.getItem.mockClear();
+ 
+            // act
+            const result = store.getUrl(1);
+ 
+            // assert
+            expect(result).toBe('data:image/png;base64,abc123');
+            expect(storageService.getItem).not.toHaveBeenCalled();
+            discardPeriodicTasks();
+        }));
+ 
+        it('should refresh lastAccessedAt on cache hit', fakeAsync(() => {
+            // arrange
+            storageService.getItem.mockReturnValue('data:image/png;base64,abc123');
+            jest.mocked(URL.canParse).mockReturnValue(true);
+            store.getUrl(1);
+            const firstAccess = store.entityMap()[1]?.lastAccessedAt ?? 0;
+            tick(5000);
+ 
+            // act
+            store.getUrl(1);
+ 
+            // assert
+            const secondAccess = store.entityMap()[1]?.lastAccessedAt ?? 0;
+            expect(secondAccess).toBeGreaterThan(firstAccess);
+            discardPeriodicTasks();
+        }));
+    });
+ 
+    describe('loadUrl', () => {
+        const blob = new Blob(['test'], { type: 'image/png' });
+ 
+        it('should create object URL from API blob and emit it', fakeAsync(() => {
+            // arrange
+            imageService.getReportImage.mockReturnValue(asyncData(blob));
+            jest.mocked(URL.createObjectURL).mockReturnValue('blob:http://localhost/abc');
+            let emittedUrl = '';
+ 
+            // act
+            store.loadUrl(1).subscribe((url) => (emittedUrl = url));
+            tick();
+ 
+            // assert
+            expect(URL.createObjectURL).toHaveBeenCalledWith(blob);
+            expect(emittedUrl).toBe('blob:http://localhost/abc');
+            discardPeriodicTasks();
+        }));
+ 
+        it('should update entity state after successful load', fakeAsync(() => {
+            // arrange
+            imageService.getReportImage.mockReturnValue(asyncData(blob));
+            jest.mocked(URL.createObjectURL).mockReturnValue('blob:http://localhost/abc');
+ 
+            // act
+            store.loadUrl(1).subscribe();
+            tick();
+ 
+            // assert
+            const entity = store.entityMap()[1];
+            expect(entity?.url).toBe('blob:http://localhost/abc');
+            expect(entity?.lastAccessedAt).toBeDefined();
+            discardPeriodicTasks();
+        }));
+ 
+        it('should persist blob as data URL to session storage', fakeAsync(() => {
+            // arrange
+            imageService.getReportImage.mockReturnValue(asyncData(blob));
+ 
+            // act
+            store.loadUrl(1).subscribe();
+            tick();
+ 
+            // assert
+            expect(storageService.setItem).toHaveBeenCalledWith(
+                '1',
+                'data:image/png;base64,abc123',
+                'SESSION',
+            );
+            discardPeriodicTasks();
+        }));
+ 
+        it('should extract page name from router URL', fakeAsync(() => {
+            // arrange
+            imageService.getReportImage.mockReturnValue(asyncData(blob));
+ 
+            // act
+            store.loadUrl(42).subscribe();
+            tick();
+ 
+            // assert
+            expect(imageService.getReportImage).toHaveBeenCalledWith(42, 'reports');
+            discardPeriodicTasks();
+        }));
+ 
+        it('should propagate API errors to subscriber', fakeAsync(() => {
+            // arrange
+            const error = new Error('Network failure');
+            imageService.getReportImage.mockReturnValue(asyncError(error));
+            let caughtError: Error | undefined;
+ 
+            // act
+            store.loadUrl(1).subscribe({ error: (err) => (caughtError = err) });
+            tick();
+ 
+            // assert
+            expect(caughtError).toBe(error);
+            expect(store.entities()).toHaveLength(0);
+            discardPeriodicTasks();
+        }));
+    });
+ 
+    describe('removeUrl', () => {
+        it('should revoke object URL, remove entity, and clear storage', fakeAsync(() => {
+            // arrange — populate entity via loadUrl
+            const blob = new Blob(['test'], { type: 'image/png' });
+            imageService.getReportImage.mockReturnValue(asyncData(blob));
+            jest.mocked(URL.createObjectURL).mockReturnValue('blob:http://localhost/abc');
+            store.loadUrl(1).subscribe();
+            tick();
+ 
+            // act
+            store.removeUrl(1);
+ 
+            // assert
+            expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:http://localhost/abc');
+            expect(store.entityMap()[1]).toBeUndefined();
+            expect(storageService.getandremoveitem).toHaveBeenCalledWith('1', 'SESSION');
+            discardPeriodicTasks();
+        }));
+ 
+        it('should clear storage even when no entity exists', fakeAsync(() => {
+            // arrange — no entity for id 999
+ 
+            // act
+            store.removeUrl(999);
+ 
+            // assert
+            expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+            expect(storageService.getandremoveitem).toHaveBeenCalledWith('999', 'SESSION');
+            discardPeriodicTasks();
+        }));
+    });
+ 
+    describe('cleanup', () => {
+        it('should remove expired entities and revoke their URLs', fakeAsync(() => {
+            // arrange
+            const blob = new Blob(['test'], { type: 'image/png' });
+            imageService.getReportImage.mockReturnValue(asyncData(blob));
+            jest.mocked(URL.createObjectURL).mockReturnValue('blob:http://localhost/abc');
+            store.loadUrl(1).subscribe();
+            tick();
+ 
+            // act — advance past TTL so next cleanup finds the entity expired
+            tick(TIME_TO_LIVE_MS + CLEANUP_INTERVAL_MS);
+ 
+            // assert
+            expect(store.entities()).toHaveLength(0);
+            expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:http://localhost/abc');
+            discardPeriodicTasks();
+        }));
+ 
+        it('should keep non-expired entities', fakeAsync(() => {
+            // arrange
+            const blob = new Blob(['test'], { type: 'image/png' });
+            imageService.getReportImage.mockReturnValue(asyncData(blob));
+            jest.mocked(URL.createObjectURL).mockReturnValue('blob:http://localhost/abc');
+            store.loadUrl(1).subscribe();
+            tick();
+            jest.mocked(URL.revokeObjectURL).mockClear();
+ 
+            // act — advance one cleanup interval, well within TTL
+            tick(CLEANUP_INTERVAL_MS);
+ 
+            // assert
+            expect(store.entities()).toHaveLength(1);
+            expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+            discardPeriodicTasks();
+        }));
+    });
+});
