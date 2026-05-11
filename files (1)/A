@@ -16,6 +16,13 @@ describe('ReportImageStore', () => {
     let imageService: jest.Mocked<ImageApiService>;
     let storageService: jest.Mocked<StorageService>;
  
+    let createObjectURLMock: jest.Mock;
+    let revokeObjectURLMock: jest.Mock;
+    let canParseMock: jest.Mock;
+    let dateNowMock: jest.Mock;
+ 
+    const originalDateNow = Date.now;
+ 
     let fileReaderMock: {
         onload: (() => void) | null;
         result: string;
@@ -23,13 +30,16 @@ describe('ReportImageStore', () => {
     };
  
     beforeEach(() => {
-        jest.spyOn(URL, 'createObjectURL').mockReturnValue('blob:http://localhost/mock-uuid');
-        jest.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
-        Object.defineProperty(URL, 'canParse', {
-            value: jest.fn().mockReturnValue(false),
-            writable: true,
-            configurable: true,
-        });
+        dateNowMock = jest.fn().mockReturnValue(0);
+        Date.now = dateNowMock;
+ 
+        createObjectURLMock = jest.fn().mockReturnValue('blob:http://localhost/mock-uuid');
+        revokeObjectURLMock = jest.fn();
+        canParseMock = jest.fn().mockReturnValue(false);
+ 
+        Object.defineProperty(URL, 'createObjectURL', { value: createObjectURLMock, configurable: true });
+        Object.defineProperty(URL, 'revokeObjectURL', { value: revokeObjectURLMock, configurable: true });
+        Object.defineProperty(URL, 'canParse', { value: canParseMock, configurable: true });
  
         fileReaderMock = {
             onload: null,
@@ -39,7 +49,11 @@ describe('ReportImageStore', () => {
                 fileReaderMock.onload?.();
             }),
         };
-        global.FileReader = jest.fn(() => fileReaderMock) as unknown as typeof FileReader;
+        Object.defineProperty(global, 'FileReader', {
+            value: jest.fn(() => fileReaderMock),
+            writable: true,
+            configurable: true,
+        });
  
         imageService = {} as jest.Mocked<ImageApiService>;
         imageService.getReportImage = jest.fn();
@@ -61,7 +75,7 @@ describe('ReportImageStore', () => {
     });
  
     afterEach(() => {
-        jest.restoreAllMocks();
+        Date.now = originalDateNow;
     });
  
     describe('getUrl', () => {
@@ -81,7 +95,7 @@ describe('ReportImageStore', () => {
             // arrange
             const dataUrl = 'data:image/png;base64,abc123';
             storageService.getItem.mockReturnValue(dataUrl);
-            jest.mocked(URL.canParse).mockReturnValue(true);
+            canParseMock.mockReturnValue(true);
  
             // act
             const result = store.getUrl(1);
@@ -95,7 +109,7 @@ describe('ReportImageStore', () => {
         it('should return undefined when storage contains bare base64', fakeAsync(() => {
             // arrange
             storageService.getItem.mockReturnValue('iVBORw0KGgoAAAA');
-            jest.mocked(URL.canParse).mockReturnValue(false);
+            canParseMock.mockReturnValue(false);
  
             // act
             const result = store.getUrl(1);
@@ -107,9 +121,9 @@ describe('ReportImageStore', () => {
         }));
  
         it('should serve from entity cache without hitting storage on subsequent calls', fakeAsync(() => {
-            // arrange — first call promotes from storage to entity
+            // arrange
             storageService.getItem.mockReturnValue('data:image/png;base64,abc123');
-            jest.mocked(URL.canParse).mockReturnValue(true);
+            canParseMock.mockReturnValue(true);
             store.getUrl(1);
             storageService.getItem.mockClear();
  
@@ -124,18 +138,18 @@ describe('ReportImageStore', () => {
  
         it('should refresh lastAccessedAt on cache hit', fakeAsync(() => {
             // arrange
+            dateNowMock.mockReturnValue(1000);
             storageService.getItem.mockReturnValue('data:image/png;base64,abc123');
-            jest.mocked(URL.canParse).mockReturnValue(true);
+            canParseMock.mockReturnValue(true);
             store.getUrl(1);
-            const firstAccess = store.entityMap()[1]?.lastAccessedAt ?? 0;
-            tick(5000);
+            expect(store.entityMap()[1]?.lastAccessedAt).toBe(1000);
  
             // act
+            dateNowMock.mockReturnValue(6000);
             store.getUrl(1);
  
             // assert
-            const secondAccess = store.entityMap()[1]?.lastAccessedAt ?? 0;
-            expect(secondAccess).toBeGreaterThan(firstAccess);
+            expect(store.entityMap()[1]?.lastAccessedAt).toBe(6000);
             discardPeriodicTasks();
         }));
     });
@@ -146,7 +160,7 @@ describe('ReportImageStore', () => {
         it('should create object URL from API blob and emit it', fakeAsync(() => {
             // arrange
             imageService.getReportImage.mockReturnValue(asyncData(blob));
-            jest.mocked(URL.createObjectURL).mockReturnValue('blob:http://localhost/abc');
+            createObjectURLMock.mockReturnValue('blob:http://localhost/abc');
             let emittedUrl = '';
  
             // act
@@ -154,15 +168,16 @@ describe('ReportImageStore', () => {
             tick();
  
             // assert
-            expect(URL.createObjectURL).toHaveBeenCalledWith(blob);
+            expect(createObjectURLMock).toHaveBeenCalledWith(blob);
             expect(emittedUrl).toBe('blob:http://localhost/abc');
             discardPeriodicTasks();
         }));
  
         it('should update entity state after successful load', fakeAsync(() => {
             // arrange
+            dateNowMock.mockReturnValue(5000);
             imageService.getReportImage.mockReturnValue(asyncData(blob));
-            jest.mocked(URL.createObjectURL).mockReturnValue('blob:http://localhost/abc');
+            createObjectURLMock.mockReturnValue('blob:http://localhost/abc');
  
             // act
             store.loadUrl(1).subscribe();
@@ -171,7 +186,7 @@ describe('ReportImageStore', () => {
             // assert
             const entity = store.entityMap()[1];
             expect(entity?.url).toBe('blob:http://localhost/abc');
-            expect(entity?.lastAccessedAt).toBeDefined();
+            expect(entity?.lastAccessedAt).toBe(5000);
             discardPeriodicTasks();
         }));
  
@@ -224,10 +239,10 @@ describe('ReportImageStore', () => {
  
     describe('removeUrl', () => {
         it('should revoke object URL, remove entity, and clear storage', fakeAsync(() => {
-            // arrange — populate entity via loadUrl
+            // arrange
             const blob = new Blob(['test'], { type: 'image/png' });
             imageService.getReportImage.mockReturnValue(asyncData(blob));
-            jest.mocked(URL.createObjectURL).mockReturnValue('blob:http://localhost/abc');
+            createObjectURLMock.mockReturnValue('blob:http://localhost/abc');
             store.loadUrl(1).subscribe();
             tick();
  
@@ -235,7 +250,7 @@ describe('ReportImageStore', () => {
             store.removeUrl(1);
  
             // assert
-            expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:http://localhost/abc');
+            expect(revokeObjectURLMock).toHaveBeenCalledWith('blob:http://localhost/abc');
             expect(store.entityMap()[1]).toBeUndefined();
             expect(storageService.getandremoveitem).toHaveBeenCalledWith('1', 'SESSION');
             discardPeriodicTasks();
@@ -248,7 +263,7 @@ describe('ReportImageStore', () => {
             store.removeUrl(999);
  
             // assert
-            expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+            expect(revokeObjectURLMock).not.toHaveBeenCalled();
             expect(storageService.getandremoveitem).toHaveBeenCalledWith('999', 'SESSION');
             discardPeriodicTasks();
         }));
@@ -256,37 +271,39 @@ describe('ReportImageStore', () => {
  
     describe('cleanup', () => {
         it('should remove expired entities and revoke their URLs', fakeAsync(() => {
-            // arrange
+            // arrange — entity created at time 0
             const blob = new Blob(['test'], { type: 'image/png' });
             imageService.getReportImage.mockReturnValue(asyncData(blob));
-            jest.mocked(URL.createObjectURL).mockReturnValue('blob:http://localhost/abc');
+            createObjectURLMock.mockReturnValue('blob:http://localhost/abc');
             store.loadUrl(1).subscribe();
             tick();
  
-            // act — advance past TTL so next cleanup finds the entity expired
-            tick(TIME_TO_LIVE_MS + CLEANUP_INTERVAL_MS);
+            // act — advance Date.now past TTL, trigger one cleanup
+            dateNowMock.mockReturnValue(TIME_TO_LIVE_MS + 1);
+            tick(CLEANUP_INTERVAL_MS);
  
             // assert
             expect(store.entities()).toHaveLength(0);
-            expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:http://localhost/abc');
+            expect(revokeObjectURLMock).toHaveBeenCalledWith('blob:http://localhost/abc');
             discardPeriodicTasks();
         }));
  
         it('should keep non-expired entities', fakeAsync(() => {
-            // arrange
+            // arrange — entity created at time 0
             const blob = new Blob(['test'], { type: 'image/png' });
             imageService.getReportImage.mockReturnValue(asyncData(blob));
-            jest.mocked(URL.createObjectURL).mockReturnValue('blob:http://localhost/abc');
+            createObjectURLMock.mockReturnValue('blob:http://localhost/abc');
             store.loadUrl(1).subscribe();
             tick();
-            jest.mocked(URL.revokeObjectURL).mockClear();
+            revokeObjectURLMock.mockClear();
  
-            // act — advance one cleanup interval, well within TTL
+            // act — Date.now within TTL, trigger cleanup
+            dateNowMock.mockReturnValue(TIME_TO_LIVE_MS - 1);
             tick(CLEANUP_INTERVAL_MS);
  
             // assert
             expect(store.entities()).toHaveLength(1);
-            expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+            expect(revokeObjectURLMock).not.toHaveBeenCalled();
             discardPeriodicTasks();
         }));
     });
